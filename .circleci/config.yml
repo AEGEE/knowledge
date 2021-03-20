@@ -1,6 +1,6 @@
 orbs:
   slack: circleci/slack@3.4.2 # FIXME update to v4
-  node: circleci/node@4.1.0
+  node: circleci/node@4.2.0
   shellcheck: circleci/shellcheck@2.2.2
   docker: circleci/docker@1.5.0
 version: 2.1
@@ -10,14 +10,14 @@ jobs:
       image: ubuntu-2004:202101-01
     steps:
       - checkout
-      - run: docker run --name postgres -e POSTGRES_PASSWORD='5ecr3t' -p 5432:5432 -d postgres:10.15
+      - run: docker run --name postgres -e POSTGRES_PASSWORD='5ecr3t' -p 5432:5432 -d postgres:10.16
       - run:
           name: Install Node
           command: |
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo ' [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
-            nvm install v14.15.1
-            nvm alias default v14.15.1
+            nvm install v14.16.0
+            nvm alias default v14.16.0
       - node/install-packages
       - run: mkdir -p ~/reports/jest
       - run:
@@ -30,15 +30,15 @@ jobs:
           path: ~/reports
   build:
     docker:
-      - image: cimg/base:2021.02
+      - image: cimg/base:2021.03
     steps:
       - checkout
       - setup_remote_docker:
-          version: 20.10.2
+          version: 20.10.4
       - run: docker-compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml build --no-cache knowledge
   eslint:
     docker:
-      - image: cimg/node:14.15.4
+      - image: cimg/node:14.16.0
     steps:
       - checkout
       - node/install-packages
@@ -50,21 +50,21 @@ jobs:
           path: ~/reports
   yamllint:
     docker:
-      - image: cimg/python:3.9.1
+      - image: cimg/python:3.9.2
     steps:
       - checkout
       - run: pip install yamllint
       - run: yamllint -d .yamllint.yml .
   shellcheck:
     docker:
-      - image: cimg/base:2021.02
+      - image: cimg/base:2021.03
     steps:
       - checkout
       - shellcheck/install
       - shellcheck/check
   audit:
     docker:
-      - image: cimg/node:14.15.4
+      - image: cimg/node:14.16.0
     steps:
       - checkout
       - run: npm audit --production
@@ -73,11 +73,11 @@ jobs:
           failure_message: The audit check for \`$CIRCLE_PROJECT_REPONAME\` has failed.
   docker-build-and-push:
     docker:
-      - image: cimg/node:14.15.4
+      - image: cimg/node:14.16.0
     steps:
       - checkout
       - setup_remote_docker:
-          version: 20.10.2
+          version: 20.10.4
       - node/install-packages
       - run: npx semantic-release
       - run: docker build  --tag aegee/knowledge:$(node -p "require('./package.json').version") --tag aegee/knowledge:latest -f docker/knowledge/Dockerfile .
